@@ -1,20 +1,13 @@
 #!/usr/bin/env python3
 """
-Server class with hypermedia pagination.
+Hypermedia pagination
 """
+
 import csv
 import math
-from typing import List, Tuple, Dict, Any
+from typing import List
 
-
-def index_range(page: int, page_size: int) -> Tuple[int, int]:
-    """Returns a tuple of size two containing a start index and an end index
-    corresponding to the range of indexes to return in a list
-    for those particular pagination parameters.
-    """
-    start = (page - 1) * page_size
-    end = page * page_size
-    return (start, end)
+index_range = __import__('0-simple_helper_function').index_range
 
 
 class Server:
@@ -33,42 +26,29 @@ class Server:
                 reader = csv.reader(f)
                 dataset = [row for row in reader]
             self.__dataset = dataset[1:]
-
         return self.__dataset
 
     def get_page(self, page: int = 1, page_size: int = 10) -> List[List]:
-        """Returns the appropriate page of the dataset.
-        """
+        """Return page of dataset"""
         assert isinstance(page, int) and page > 0
         assert isinstance(page_size, int) and page_size > 0
 
         start, end = index_range(page, page_size)
         data = self.dataset()
-
         if start >= len(data):
             return []
-
         return data[start:end]
 
-    def get_hyper(self, page: int = 1, page_size: int = 10) -> Dict[str, Any]:
-        """Returns a dictionary containing hypermedia pagination details.
-        """
+    def get_hyper(self, page: int = 1, page_size: int = 10) -> dict:
+        """Return hypermedia pagination info"""
         data = self.get_page(page, page_size)
-        total_dataset_length = len(self.dataset())
-        total_pages = math.ceil(total_dataset_length / page_size) if page_size > 0 else 0
-
-        next_page = page + 1 if page < total_pages else None
-        prev_page = page - 1 if page > 1 else None
-
-        # Handle out of range pages where dataset returns empty list
-        if not data and page > total_pages and total_pages > 0:
-            next_page = None
+        total_pages = math.ceil(len(self.dataset()) / page_size)
 
         return {
-            "page_size": len(data),
-            "page": page,
-            "data": data,
-            "next_page": next_page,
-            "prev_page": prev_page,
-            "total_pages": total_pages
+            'page_size': len(data),
+            'page': page,
+            'data': data,
+            'next_page': page + 1 if page < total_pages else None,
+            'prev_page': page - 1 if page > 1 else None,
+            'total_pages': total_pages,
         }
